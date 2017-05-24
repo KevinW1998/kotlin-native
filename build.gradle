@@ -60,11 +60,21 @@ void setupClang(Project project) {
     }
 }
 
+String getTargetArg(Properties konanProperties, String target) {
+    def result = konanProperties.getProperty("quadruple.$target")
+    if (result == null) {
+        throw IllegalArgumentException("konan.properties has no LLVM target args for target: $target")
+    }
+    return result
+}
+
 void setupCompilationFlags() {
     ext.clangPath = ["$llvmDir/bin"]
     ext.clangArgs = []
     ext.targetArgs = [:]
     final String binDir
+    def properties = new Properties()
+    properties.load(new FileInputStream((File)konanPropertiesFile))
 
     if (isLinux()) {
         ext.host = "linux"
@@ -72,7 +82,7 @@ void setupCompilationFlags() {
             [(ext.host): 
                ["--sysroot=${gccToolchainDir}/${gnuTriplet}/sysroot"],
              "raspberrypi":
-               ["-target", "armv6-unknown-linux-gnueabihf",
+               ["-target", getTargetArg(properties, "raspberrypi"),
                 "-mfpu=vfp", "-mfloat-abi=hard",
                 "--sysroot=$raspberryPiSysrootDir",
                 // TODO: those two are hacks.
@@ -94,7 +104,7 @@ void setupCompilationFlags() {
      }
      ext.targetArgs << [
        "android_arm32":
-                ["-target", "arm-linux-androideabi",
+                ["-target", getTargetArg(properties, "android_arm32"),
                 "--sysroot=$android_arm32SysrootDir",
                 // HACKS!
                 /*"-D_LIBCPP_HAS_MUSL_LIBC",*/ "-DOMIT_BACKTRACE", "-D__ANDROID__",
@@ -228,7 +238,7 @@ task distCompiler(type: Copy) {
         fileMode(0755)
         into('bin')
     }
-    from(project(':backend.native').file('konan.properties')) {
+    from(konanPropertiesFile) {
         into('konan')
     }
 

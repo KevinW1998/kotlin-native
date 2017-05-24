@@ -233,6 +233,8 @@ task update(type: Copy) {
     dependsOn tasks.withType(NativeDep)
 }
 
+rootProject.ext.konanPropertiesFile = project(':backend.native').file('konan.properties')
+
 tasks.withType(TgzNativeDep) {
     rootProject.ext.set("${name}Dir", outputDir.path)
 }
